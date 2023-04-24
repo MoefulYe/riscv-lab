@@ -1,3 +1,5 @@
+`include "../include/FullAdder1bit.v"
+
 module SerialAdder4bits (
   input [3:0] A,
   input [3:0] B,
