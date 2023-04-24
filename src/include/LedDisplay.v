@@ -3,11 +3,10 @@ module LedDisplay(
     input [32:1]data, 
     input enable_n,
     output [3:0] sel, 
-    seg,
+    output reg [7:0] seg; 
 ); 
     reg [2:0] which = 0; 
     assign sel = { which, enable_n };
-    output reg [7:0] seg; 
     output reg [10:0] count = 0; 
     always @(posedge clk) count <= count + 1'b1;
     always @(negedge clk) if (&count) which <= which + 1'b1;
