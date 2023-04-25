@@ -1,8 +1,6 @@
 module ALU (
-    input [31:0] _lhs,
-    input [31:0] _rhs,
-    input rst_n,
-    input clk,
+    input [31:0] lhs,
+    input [31:0] rhs,
     /// input | op
     /// 0000  | add signed
     /// 0001  | sll
@@ -14,25 +12,14 @@ module ALU (
     /// 0111  | and
     /// 1000  | sub signed
     /// 1001  | sra
-    /// 1010  | add unsigned
-    /// 1011  | sub unsigned
+    /// 1010  | add 
+    /// 1011  | subu
     /// ****  | unvalid
     input [3:0] op, 
     output reg [31:0] res,
     output reg [3:0] flags // [is_zero, is_positive, carry, overflow]
 );
 
-reg [31:0] lhs,rhs;
-
-@always(negedge rst_n or posedge clk) begin
-    if(!rst_n)begin
-        lhs <= 32'b0;
-        rhs <= 32'b0;
-    end else begin
-        lhs <= _lhs;
-        rhs <= _rhs;
-    end
-end
 
 always @(*) begin
     case(op)
@@ -60,6 +47,6 @@ always @(*) begin
         default: begin res = 0; end
     endcase 
     flags[3] <= res == 32'h0000_0000 ? 1 : 0;
-    flags[2] <= res[32];
+    flags[2] <= res[31];
 end
 endmodule

@@ -3,15 +3,13 @@ module LedDisplay(
     input [32:1]data, 
     input enable_n,
     output [3:0] sel, 
-    output reg [7:0] seg; 
+    output reg [7:0] seg
 ); 
     reg [2:0] which = 0; 
     assign sel = { which, enable_n };
-    output reg [10:0] count = 0; 
-    always @(posedge clk) count <= count + 1'b1;
-    always @(negedge clk) if (&count) which <= which + 1'b1;
+    always @(negedge clk)which <= which + 1'b1;
 
-    output reg [3:0] digit; 
+    reg [3:0] digit; 
     always @* case (which)
         0: digit <= data[32:29]; 
         1: digit <= data[28:25];

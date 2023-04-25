@@ -23,7 +23,6 @@ module ALUTopper(
     input clk_a,
     input clk_b,
     input clk_op,
-    input rst_n,
     output [3:0] flags,
     output [3:0] sel, 
     output [7:0] seg 
@@ -33,9 +32,8 @@ wire [31:0] operandA;
 wire [31:0] operandB;
 wire [3:0] op;
 wire [31:0] res;
-wire clk1, clk2;
+wire clk2;
 
-Divider #(200) d1(clk, clk1);
 Divider #(20000) d2(clk, clk2);
 
 Mux mux(
@@ -51,8 +49,6 @@ Mux mux(
 ALU alu(
     operandA,
     operandB,
-    rst_n,
-    clk1,
     op,
     res,
     flags
@@ -61,7 +57,7 @@ ALU alu(
 LedDisplay led(
     clk2,
     res,
-    1'b0.
+    1'b0,
     sel,
     seg
 );

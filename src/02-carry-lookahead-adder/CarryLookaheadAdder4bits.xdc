@@ -37,3 +37,4 @@ set_property PULLDOWN true [get_ports {B[1]}]
 set_property PULLDOWN true [get_ports {B[0]}]
 
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
+set_property ALLOW_COMBINATORIAL_LOOPS TRUE [get_nets C_OBUF[0]];
