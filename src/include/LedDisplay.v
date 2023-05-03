@@ -1,24 +1,26 @@
 module LedDisplay(
-    input clk, 
-    input [32:1]data, 
-    input enable_n,
-    output [3:0] sel, 
+    input clk_100M, 
+    input [31:0]data,
+    input enable, // 1使能
+    output [3:0] sel, //[3]是使能位
     output reg [7:0] seg
 ); 
-    reg [2:0] which = 0; 
-    assign sel = { which, enable_n };
-    always @(negedge clk)which <= which + 1'b1;
+    reg [10:0] count = 0;
+    reg [2:0] which = 0;
+    assign sel = { enable, which };
+    always @(posedge clk_100M) count <= count + 1'b1;
+    always @(negedge clk_100M) if(&count) which <= which + 1'b1;
 
     reg [3:0] digit; 
     always @* case (which)
-        0: digit <= data[32:29]; 
-        1: digit <= data[28:25];
-        2: digit <= data[24:21];
-        3: digit <= data[20:17];
-        4: digit <= data[16:13];
-        5: digit <= data[12:09];
-        6: digit <= data[08:05];
-        7: digit <= data[04:01]; 
+        0: digit <= data[31:28]; 
+        1: digit <= data[27:24];
+        2: digit <= data[23:20];
+        3: digit <= data[19:16];
+        4: digit <= data[15:12];
+        5: digit <= data[11:08];
+        6: digit <= data[07:04];
+        7: digit <= data[03:00]; 
     endcase
 
     always @* case (digit) 

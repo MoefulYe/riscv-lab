@@ -9,10 +9,21 @@ wire ZF,SF,CF,OF;
 ALU alu(
     lhs,
     rhs,
+    clk,
     op,
     res,
     { ZF, SF, CF, OF }
 );
+
+reg clk;
+
+parameter PERIOD = 2;
+initial begin
+    clk = 0;
+    forever begin
+        #(PERIOD/2) clk = ~clk;
+    end
+end
 
 initial begin
     op = 4'b0000; //add

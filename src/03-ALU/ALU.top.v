@@ -1,14 +1,13 @@
 //时分复用输入
 //运算ALU
 //数显 
-`include "../include/Divider.v"
 `include "../include/LedDisplay.v"
+
 module Mux(
     input [31:0] data,
     input clk_a,
     input clk_b,
     input clk_op,
-    input clk,
     output reg [31:0] operandA,
     output reg [31:0] operandB,
     output reg [3:0] op
@@ -23,18 +22,30 @@ module ALUTopper(
     input clk_a,
     input clk_b,
     input clk_op,
+    input clk,
     output [3:0] flags,
     output [3:0] sel, 
-    output [7:0] seg 
+    output [7:0] seg
 );
 
 wire [31:0] operandA;
 wire [31:0] operandB;
 wire [3:0] op;
 wire [31:0] res;
-wire clk2;
+wire alu_clk;
+wire led_clk;
 
-Divider #(20000) d2(clk, clk2);
+IPClock clock(
+    // Clock out ports
+    .clk_10M(alu_clk),     // output clk_10M
+    .clk_100M(led_clk),     // output clk_100M
+    // Status and control signals
+    .reset(1'b0), // input reset 0时不重置
+    .locked(),       // output locked
+   // Clock in ports
+    .clk_in(clk)      // input clk_in
+);
+
 
 Mux mux(
     data,
@@ -49,15 +60,16 @@ Mux mux(
 ALU alu(
     operandA,
     operandB,
+    alu_clk,
     op,
     res,
     flags
 );
 
 LedDisplay led(
-    clk2,
+    clk,
     res,
-    1'b0,
+    1'b1,
     sel,
     seg
 );
