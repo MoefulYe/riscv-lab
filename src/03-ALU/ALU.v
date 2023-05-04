@@ -1,20 +1,8 @@
+`include "../include/define.v"
+
 module ALU (
     input [31:0] lhs,
     input [31:0] rhs,
-    /// input | op
-    /// 0000  | add
-    /// 0001  | sll
-    /// 0010  | slt
-    /// 0011  | sltu
-    /// 0100  | xor
-    /// 0101  | srl
-    /// 0110  | or
-    /// 0111  | and
-    /// 1000  | sub
-    /// 1001  | sra
-    /// 1010  | addu 
-    /// 1011  | subu
-    /// ****  | unvalid
     input clk,
     input [3:0] op, 
     output reg [31:0] res,
@@ -24,19 +12,18 @@ module ALU (
 reg _c;
 always @(negedge clk) begin
     case(op)
-        4'b0000:begin { _c, res } = lhs + rhs; flags[0] = _c ^ res[31] ^ lhs[31] ^ rhs[31]; end //add
-        4'b0001:begin res = lhs << rhs; end // sll
-        4'b0010:begin res = $signed(lhs) < $signed(rhs); end //slt
-        4'b0011:begin res = lhs < rhs; end //sltu
-        4'b0100:begin res = lhs ^ rhs; end //xor
-        4'b0101:begin res = lhs >> rhs; end //srl
-        4'b0110:begin res = lhs | rhs; end //or
-        4'b0111:begin res = lhs & rhs; end //and
-        4'b0000:begin { _c, res } = lhs - rhs; flags[0] = _c ^ res[31] ^ lhs[31] ^ rhs[31]; end //sub
-        4'b1001:begin res = $signed(lhs) >>> rhs; end //sra
-        4'b1010:begin { flags[1], res } = lhs + rhs; end //addu
-        4'b1011:begin { flags[1], res } = lhs - rhs; end //subu
-        4'b1100:begin res = ~lhs; end //not
+        `ALU_ADD_OP :begin { _c, res } = lhs + rhs; flags[0] = _c ^ res[31] ^ lhs[31] ^ rhs[31]; end //add
+        `ALU_SLL_OP :begin res = lhs << rhs; end // sll
+        `ALU_SLT_OP :begin res = $signed(lhs) < $signed(rhs); end //slt
+        `ALU_SLTU_OP:begin res = lhs < rhs; end //sltu
+        `ALU_XOR_OP :begin res = lhs ^ rhs; end //xor
+        `ALU_SRL_OP :begin res = lhs >> rhs; end //srl
+        `ALU_OR_OP  :begin res = lhs | rhs; end //or
+        `ALU_AND_OP :begin res = lhs & rhs; end //and
+        `ALU_SUB_OP :begin { _c, res } = lhs - rhs; flags[0] = _c ^ res[31] ^ lhs[31] ^ rhs[31]; end //sub
+        `ALU_SRA_OP :begin res = $signed(lhs) >>> rhs; end //sra
+        `ALU_ADDU_OP:begin { flags[1], res } = lhs + rhs; end //addu
+        `ALU_SUBU_OP:begin { flags[1], res } = lhs - rhs; end //subu
         default: begin res = 0; end
     endcase 
     flags[3] <= res == 32'h0000_0000 ? 1 : 0;
