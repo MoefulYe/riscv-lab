@@ -1,6 +1,6 @@
 `include "../define/pc_jump.v"
 
-//"../07-inst-fetch-decode/ProgramCounter.v"的升级版，使得能够支持跳转指令
+//"../07-inst-fetch-decode/PC.v"的升级版，使得能够支持跳转指令
 module PC (
     input clk,
     input rst,

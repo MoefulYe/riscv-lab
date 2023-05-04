@@ -1,4 +1,4 @@
-`include "./ProgramCounter.v"
+`include "./PC.v"
 `include "./InstDecoder1.v"
 
 
@@ -15,7 +15,7 @@ module InstFetchDecode(
 );
 
 wire [7:0] ins_addr;
-ProgramCounter pc(
+PC pc(
   .clk(clk),
   .rst(rst_pc),
   .pc_write(pc_write),

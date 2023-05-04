@@ -1,4 +1,4 @@
-module ProgramCounter(
+module PC(
   input clk,
   input rst,
   input pc_write,

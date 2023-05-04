@@ -1,7 +1,7 @@
 module RegHeap(
     input clk,
     input w_en,
-    input rst_n,
+    input rst,
     input [4:0] r_addr_a,
     output reg [31:0] r_data_a,
     input [4:0] r_addr_b,
@@ -12,8 +12,8 @@ module RegHeap(
 
 reg [31:0]regs[31:0];
 integer i;
-always@(negedge clk or negedge rst_n) begin
-    if(!rst_n) begin
+always@(negedge clk or posedge rst) begin
+    if(rst) begin
        regs[0] <= 0;
        for(i=1;i<32;i=i+1) regs[i] <= 1 << i;
     end else begin
@@ -23,7 +23,7 @@ always@(negedge clk or negedge rst_n) begin
     end
 end
 
-always@(*)begin
+always@(negedge clk)begin
     r_data_a <= regs[r_addr_a];
     r_data_b <= regs[r_addr_b];
 end

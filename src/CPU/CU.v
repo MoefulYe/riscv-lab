@@ -12,17 +12,16 @@ module CU (
     input [6:0] opcode,
     input [2:0] funct3, 
     input [6:0] funct7,
+    input AeqB, //alu左右操作数相等 beq
     output reg pc_go_next, pc_jump, //控制pc自增和跳转
     output reg pc_jump_sel, //jump模式选择
     output reg ir_write, //控制ir寄存器写
     output reg regs_write, //控制寄存器堆写操作
     output reg dm_write, //控制数据存储器写
     output [3:0] alu_op, //alu操作码
-    output alu_rhs_sel,  //alu右操作数来源
-    output [1:0] wb_sel, //回写到rd寄存器的数据来源
+    output reg alu_rhs_sel,  //alu右操作数来源
+    output reg [1:0] wb_sel //回写到rd寄存器的数据来源
 );
-
-assign pc_rst = rst;
 
 ///IF取指令 
 ///PI pc inc 
@@ -32,7 +31,8 @@ assign pc_rst = rst;
 ///EX(I,B) 执行计算指明右操作数是立刻数还是寄存器B
 ///M(R,W)访存 从F寄存器读取访问地址，从w_data写入存储器/读出数据写入MDR寄存器
 ///WB(I,F,M,P) 从立刻数/ALU运算结果/数据存储器数据寄存器/PC寄存器写入寄存器堆
-///JP(F,R) 旧地址写入rd F写入PC寄存器/相对跳转 
+///JP(F,R) F写入PC寄存器/相对跳转
+///BR条件跳转
 
 
 InstDecoder2 id2(opcode, funct3, funct7, alu_op);
@@ -51,6 +51,7 @@ parameter WBM   = 4'b1001;
 parameter WBP   = 4'b1010;
 parameter JPF   = 4'b1011;
 parameter JPR   = 4'b1100;
+parameter BEQ   = 4'b1101;
 
 reg [3:0] stat, next_stat;
 
@@ -67,9 +68,9 @@ end
 //U-type(lui):  IFID -> WBI -> IFID
 //L-type(lw):   IFID -> RR -> EXI -> MR -> WBM -> IFID
 //S-type(sw):   IFID -> RR -> EXI -> MW -> IFID
-//B-type(beq):  IFID -> RR -> EXB -> JPR(使用xor计算，相等时为0,是否真正跳转由PC的jump是否为0决定) -> IFID
-//J-type(jal):  IFID -> JPR -> IFID
-//J-type(jalr): IFID -> RR -> EXI -> JPF -> IFID
+//B-type(beq):  IFID -> RR -> BEQ -> IFID
+//J-type(jal):  IFID -> WBP -> JPR -> IFID
+//J-type(jalr): IFID -> WBP -> RR -> EXI -> JPF -> IFID
 
 //确定下一个状态
 always @(*) begin
@@ -83,8 +84,8 @@ always @(*) begin
         `INST_L: next_stat = RR;
         `INST_S: next_stat = RR;
         `INST_B: next_stat = RR;
-        `INST_JAL: next_stat = JPR;
-        `INST_JALR: next_stat = RR;
+        `INST_JAL: next_stat = WBP;
+        `INST_JALR: next_stat = WBP;
         default: next_stat = IFID;
         endcase
     end
@@ -94,7 +95,7 @@ always @(*) begin
         `INST_I: next_stat = EXI;
         `INST_L: next_stat = EXI;
         `INST_S: next_stat = EXI;
-        `INST_B: next_stat = EXB;
+        `INST_B: next_stat = BEQ;
         `INST_JALR: next_stat = EXI;
         default: next_stat = IFID;
         endcase
@@ -111,7 +112,7 @@ always @(*) begin
     EXB: begin
         case(opcode)
         `INST_R: next_stat = WBF;
-        `INST_B: next_stat = JPR;
+        `INST_B: next_stat = BEQ;
         default: next_stat = IFID;
         endcase
     end
@@ -120,22 +121,147 @@ always @(*) begin
     WBI: next_stat = IFID;
     WBF: next_stat = IFID;
     WBM: next_stat = IFID;
-    WBP: next_stat = IFID;
+    WBP: begin
+        case(opcode)
+        `INST_JAL: next_stat = JPR;
+        `INST_JALR: next_stat = RR;
+        default: next_stat = IFID;
+        endcase
+    end
     JPF: next_stat = IFID;
     JPR: next_stat = IFID;
+    BEQ: next_stat = IFID;
     default: next_stat = IFID;
     endcase
 end 
 
+assign pc_rst = rst;
+
 //根据状态执行操作
 always @(posedge rst or posedge clk) begin
     if(rst) begin
-    pc_write <= 1'b0;
-    ir_write <= 1'b0;
-    regs_write <= 1'b0;
+       pc_go_next <= 0; 
+       pc_jump <= 0;
+       ir_write <= 0;
+       regs_write <= 0;
+       dm_write <= 0;
     end else begin
-    case(next_stat)
-    endcase
+        case(next_stat)
+        IDLE: begin
+            pc_go_next <= 0; 
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+        end
+        IFID: begin
+            pc_go_next <= 1; 
+            pc_jump <= 0;
+            ir_write <= 1;
+            regs_write <= 0;
+            dm_write <= 0;
+        end
+        RR: begin
+            pc_go_next <= 0; 
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+        end
+        EXI: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+            alu_rhs_sel <= `RHS_FROM_IMM32;
+        end
+        EXB: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+            alu_rhs_sel <= `RHS_FROM_B_REG;
+        end
+        MR: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+        end
+        MW: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 1;
+        end
+        WBI: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 1;
+            dm_write <= 0;
+            wb_sel <= `WB_FROM_IMM32;
+        end
+        WBF: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 1;
+            dm_write <= 0;
+            wb_sel <= `WB_FROM_F_REG;
+        end
+        WBM: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 1;
+            dm_write <= 0;
+            wb_sel <= `WB_FROM_M_REG;
+        end
+        WBP: begin
+            pc_go_next <= 0;
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 1;
+            dm_write <= 0;
+            wb_sel <= `WB_FROM_PC;
+        end
+        JPF: begin
+            pc_go_next <= 0;
+            pc_jump <= 1;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+            pc_jump_sel <= `JP_TO_F;
+        end
+        JPR: begin
+            pc_go_next <= 0;
+            pc_jump <= 1;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+            pc_jump_sel <= `JP_RELATIVE;
+        end
+        BEQ: begin
+            pc_go_next <= 0;
+            pc_jump <= AeqB;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+            pc_jump_sel <= `JP_RELATIVE;
+        end
+        default: begin
+            pc_go_next <= 0; 
+            pc_jump <= 0;
+            ir_write <= 0;
+            regs_write <= 0;
+            dm_write <= 0;
+        end
+        endcase
     end
 end
     
