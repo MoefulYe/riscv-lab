@@ -12,7 +12,7 @@ module RegHeap(
 
 reg [31:0]regs[31:0];
 integer i;
-always@(posedge clk or negedge rst_n) begin
+always@(negedge clk or negedge rst_n) begin
     if(!rst_n) begin
        regs[0] <= 0;
        for(i=1;i<32;i=i+1) regs[i] <= 1 << i;
