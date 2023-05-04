@@ -22,7 +22,7 @@ module ALU (
 );
 
 reg _c;
-always @(posedge clk) begin
+always @(negedge clk) begin
     case(op)
         4'b0000:begin { _c, res } = lhs + rhs; flags[0] = _c ^ res[31] ^ lhs[31] ^ rhs[31]; end //add
         4'b0001:begin res = lhs << rhs; end // sll

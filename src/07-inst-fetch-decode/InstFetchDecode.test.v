@@ -1,4 +1,4 @@
-module InsFetchDecodeTester();
+module InstFetchDecodeTester();
 
 reg clk = 0;
 reg rst_pc = 0;
@@ -14,7 +14,7 @@ initial begin
     forever #(PERIOD/2) clk=~clk;
 end
 
-InsFetchDecode ins_fetch_decode(
+InstFetchDecode ins_fetch_decode(
   .clk(clk),
   .rst_pc(rst_pc),
   .pc_write(1),

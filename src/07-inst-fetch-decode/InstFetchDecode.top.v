@@ -24,7 +24,7 @@ end
 
 endmodule
 
-module InsFetchDecodeTopper (
+module InstFetchDecodeTopper (
     input led_clk,  
     input clk,      //按钮模拟，一个周期
     input rst_pc,   //pc寄存器指向0地址
@@ -40,7 +40,7 @@ module InsFetchDecodeTopper (
     wire [2:0] funct3;    
     wire [6:0] funct7;    
     wire [31:0] imm32;
-    InsFetchDecode ifd(
+    InstFetchDecode ifd(
         clk,
         rst_pc,
         pc_write,
