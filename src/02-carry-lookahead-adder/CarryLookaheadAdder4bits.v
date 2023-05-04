@@ -1,4 +1,4 @@
-`include "../include/FullAdder1bit.v"
+`include "../01-serial-adder/FullAdder1bit.v"
 
 module CarryLookaheadAdder4bits(
   input [3:0] a,

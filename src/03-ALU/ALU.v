@@ -1,4 +1,4 @@
-`include "../include/define.v"
+`include "../define/alu_op.v"
 
 module ALU (
     input [31:0] lhs,

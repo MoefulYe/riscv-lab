@@ -1,5 +1,10 @@
-`include "./InstDecoder2.v"
+`include "../define/opcode.v"
+`include "../define/pc_jump.v"
+`include "../define/rhs_from.v"
+`include "../define/wb_from.v"
 
+`include "./InstDecoder2.v"
+`include "./PC.v"
 
 module CU (
     input rst,  //复位信号

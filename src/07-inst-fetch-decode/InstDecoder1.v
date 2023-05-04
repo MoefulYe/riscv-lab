@@ -1,4 +1,4 @@
-`include "../include/define.v"
+`include "../define/opcode.v"
 
 module InstDecoder1(
   input [31:0] inst,

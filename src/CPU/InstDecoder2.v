@@ -1,4 +1,5 @@
-`include "../include/define.v"
+`include "../define/opcode.v"
+`include "../define/alu_op.v"
 
 //次级译码模块，主要的功能是从opcode, func3, func7中译出alu_op
 module InstDecoder2 (
