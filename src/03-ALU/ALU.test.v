@@ -17,7 +17,7 @@ ALU alu(
 
 reg clk;
 
-parameter PERIOD = 2;
+parameter PERIOD = 10;
 initial begin
     clk = 0;
     forever begin
@@ -51,6 +51,10 @@ initial begin
     op = 4'b0100; //xor
     lhs = 32'h0000_0000;
     rhs = 32'h0000_0001;
+    #20
+    op = 4'b0101; //srl
+    lhs = 32'hf000_0000;
+    rhs = 32'h0000_0002;
     #20
     op = 4'b0110; //or
     lhs = 32'h0000_0000;

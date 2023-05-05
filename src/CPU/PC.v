@@ -23,7 +23,7 @@ end
 always @(*) begin
     if(jump) begin
         case(jp_sel)
-            `JP_RELATIVE: begin inst_addr <= inst_addr + rel_addr; end
+            `JP_RELATIVE: begin inst_addr <= inst_addr + rel_addr - 4; end
             `JP_TO_F: begin inst_addr <= f_data; end
         endcase
     end

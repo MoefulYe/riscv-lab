@@ -1,0 +1,35 @@
+1. 多了a1寄存器入参指令
+        lui     a5,%hi(.LC0)
+        addi    a1,a5,%lo(.LC0)
+        lui     a5,%hi(.LC1)
+        addi    a0,a5,%lo(.LC1)
+
+2. 
+main:
+  addi t0, x0, x0;
+  addi t1, x0, 0x40;
+  addi t3, x0, 0x72;
+L1:
+  lw t2 , 0(t1);
+  add t0, t0, t2;
+  addi t1, t1, 4;
+  bne t1, t3, L1;
+  j L1;
+L1:
+  sw t0, 0x80(x0) #好吧只少了一条指令
+
+3.全字, sw而不是sh或者sb a0-a2是传入的参数不改变传入的参数更语义化
+
+
+4. 主要考虑到大数不能直接用一条指令实现，要多条指令配合
+li      a5,268435456
+addi t0, a5, 0;
+li      a5,16777216
+addi    a5,a5,256
+addi    t1, a5, 0;
+lw      a1, t1
+lw      a0,t0
+addi a2, x0, 20;
+
+5. 把bgt放在l1开头而不是l2前面
+8. 编译代码看不懂，查阅网上资料
