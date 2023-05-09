@@ -1,7 +1,7 @@
 `include "../03-ALU/ALU.v"
 
 module ALUwithRegHeap(
-      input rst_n,
+      input rst,
       input w_en,
       input [4:0] r_addr_a, r_addr_b, w_addr,
       input [3:0] alu_op,
@@ -18,7 +18,7 @@ assign w_data = res;
 RegHeap gh(
     reg_clk,
     w_en,
-    rst_n,
+    rst,
     r_addr_a,
     r_data_a,
     r_addr_b,

@@ -15,9 +15,10 @@ module CPU(
     input [31:0] dm_data_out
 );
 
-wire pc_go_next;
+wire pc_step;
 wire pc_jump;
 wire pc_jump_sel;
+wire [31:0] ret_addr;
 
 reg [31:0] ir;
 wire ir_write;
@@ -30,9 +31,8 @@ wire [6:0] funct7;
 
 wire regs_write;
 wire [31:0] A,B;
-wire AeqB = (A == B);
 wire [31:0] p_m_f_imm32 [3:0];
-assign p_m_f_imm32 = {inst_addr, dm_data_out, alu_f, imm32};
+assign p_m_f_imm32 = {ret_addr, dm_data_out, alu_f, imm32};
 wire [31:0] write_back;
 wire [1:0] wb_sel;
 assign write_back = p_m_f_imm32[wb_sel];
@@ -48,6 +48,7 @@ assign rhs = imm32_B[alu_rhs_sel]
 wire [3:0] alu_op;
 wire [31:0] alu_f;
 wire [3:0] alu_flags;
+wire zf = alu_flags[3];
 
 CU cu(
   rst,
@@ -55,8 +56,8 @@ CU cu(
   opcode,
   funct3,
   funct7,
-  AeqB,
-  pc_go_next,
+  zf,
+  pc_step,
   pc_jump,
   pc_jump_sel,
   ir_write,
@@ -68,16 +69,7 @@ CU cu(
 );
 
 //PC模块
-PC pc(
-    clk,
-    rst,
-    pc_go_next,
-    pc_jump,
-    pc_jump_sel,
-    alu_f,
-    imm32,
-    inst_addr
-);
+PC pc( clk, rst, pc_step, pc_jump, pc_jump_sel, alu_f, imm32, inst_addr, ret_addr );
 
 //IR模块
 always @(negedge clk) begin
@@ -87,38 +79,12 @@ always @(negedge clk) begin
 end
 
 //ID1
-InstDecoder1 id1(
-    ir,
-    rs1,
-    rs2,
-    rd,
-    imm32,
-    opcode,
-    funct3,
-    funct7
-);
+InstDecoder1 id1( ir, rs1, rs2, rd, imm32, opcode, funct3, funct7 );
 
 //RegHeap
-RegHeap gh(
-    clk,
-    regs_write,
-    rst,
-    rs1,
-    A,
-    rs2,
-    B,
-    rd,
-    w_data
-);
+RegHeap gh( clk, regs_write, rst, rs1, A, rs2, B, rd, w_data );
 
 //ALU
-ALU alu(
-    lhs,
-    rhs,
-    clk,
-    alu_op,
-    alu_f,
-    alu_flags
-);
+ALU alu( lhs, rhs, clk, alu_op, alu_f, alu_flags );
 
 endmodule
