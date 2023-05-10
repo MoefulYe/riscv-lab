@@ -1,5 +1,5 @@
 `include "../define/opcode.v"
-`include "../define/pc_jump.v"
+`include "../define/pc_update.v"
 `include "../define/rhs_from.v"
 `include "../define/wb_from.v"
 
@@ -13,14 +13,15 @@ module CU (
     input [2:0] funct3, 
     input [6:0] funct7,
     input zf, //beq命令有用，alu做异或操作，为0则zf=1
-    output reg pc_step, pc_jump, //控制pc自增和跳转
-    output reg pc_jump_sel, //jump模式选择
+    output reg pc_write, 
+    output reg [1:0] pc_update_sel, //控制pc更新类型
     output reg ir_write, //控制ir寄存器写
     output reg regs_write, //控制寄存器堆写操作
     output reg dm_write, //控制数据存储器写
     output [3:0] alu_op, //alu操作码
     output reg alu_rhs_sel,  //alu右操作数来源
-    output reg [1:0] wb_sel //回写到rd寄存器的数据来源
+    output reg [1:0] wb_sel, //回写到rd寄存器的数据来源
+    output [3:0] watch_stat //当前状态
 );
 
 ///IF取指令 
@@ -57,6 +58,8 @@ parameter WBP_JPR   = 4'b1011;
 parameter BEQ       = 4'b1100;
 
 reg [3:0] stat, next_stat;
+
+assign watch_stat = stat;
 
 //状态转移
 always @(posedge rst or posedge clk) begin
@@ -136,117 +139,109 @@ assign pc_rst = rst;
 //根据状态执行操作
 always @(posedge rst or posedge clk) begin
     if(rst) begin
-       pc_step <= DISABLE; 
-       pc_jump <= DISABLE;
+       pc_write <= DISABLE;
+       pc_update_sel <= `PC_STEP;
        ir_write <= DISABLE;
        regs_write <= DISABLE;
        dm_write <= DISABLE;
     end else begin
         case(next_stat)
         IDLE: begin
-            pc_step     <= DISABLE; 
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE;
+            pc_update_sel <= `PC_STEP;
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
             dm_write    <= DISABLE;
         end
         IFID: begin
-            pc_step     <= ENABLE; 
-            pc_jump     <= DISABLE;
+            pc_write    <= ENABLE; 
             ir_write    <= ENABLE;
             regs_write  <= DISABLE;
             dm_write    <= DISABLE;
         end
         RR: begin
-            pc_step     <= DISABLE; 
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE; 
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
             dm_write    <= DISABLE;
         end
         EXI: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE;
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
             alu_rhs_sel <= `RHS_FROM_IMM32;
-            dm_write    <= DISABLE;
+            dm_write    <= (opcode == `INST_S) ? ENABLE : DISABLE;
         end
         EXB: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE;
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
             alu_rhs_sel <= `RHS_FROM_B_REG;
             dm_write    <= DISABLE;
         end
         MR: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE;
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
             dm_write    <= DISABLE;
         end
         MW: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE;
+            pc_update_sel <= `PC_STEP;
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
-            dm_write    <= ENABLE;
+            dm_write    <= DISABLE;
         end
         WBI: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= DISABLE;
+            pc_write     <= DISABLE;
+            pc_update_sel <= `PC_STEP;
             ir_write    <= DISABLE;
             regs_write  <= ENABLE;
             wb_sel      <= `WB_FROM_IMM32;
             dm_write    <= DISABLE;
         end
         WBF: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE;
+            pc_update_sel <= `PC_STEP;
             ir_write    <= DISABLE;
             regs_write  <= ENABLE;
             wb_sel      <= `WB_FROM_F_REG;
             dm_write    <= DISABLE;
         end
         WBM: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE;
+            pc_update_sel <= `PC_STEP;
             ir_write    <= DISABLE;
             regs_write  <= ENABLE;
             wb_sel      <= `WB_FROM_M_REG;
             dm_write    <= DISABLE;
         end
         WBP_JPF: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= ENABLE;
-            pc_jump_sel <= `JP_TO_F;
+            pc_write    <= DISABLE;
+            pc_update_sel <= `PC_JP_F;
             ir_write    <= DISABLE;
             regs_write  <= ENABLE;
             wb_sel      <= `WB_FROM_P_REG;
             dm_write    <= DISABLE;
         end
         WBP_JPR: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= ENABLE;
-            pc_jump_sel <= `JP_RELATIVE;
+            pc_write    <= DISABLE;
+            pc_update_sel <= `PC_JP_R;
             ir_write    <= DISABLE;
             regs_write  <= ENABLE;
             wb_sel      <= `WB_FROM_P_REG;
             dm_write    <= DISABLE;
         end
         BEQ: begin
-            pc_step     <= DISABLE;
-            pc_jump     <= zf;
-            pc_jump_sel <= `JP_RELATIVE;
+            pc_write    <= DISABLE;
+            pc_update_sel <= ( zf == 1 ) ? `PC_JP_R : `PC_STEP; //zf为1时rhs==lhs，要相对跳转，否则顺序执行
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
             dm_write    <= DISABLE;
         end
         default: begin
-            pc_step     <= DISABLE; 
-            pc_jump     <= DISABLE;
+            pc_write    <= DISABLE; 
+            pc_update_sel <= `PC_STEP;
             ir_write    <= DISABLE;
             regs_write  <= DISABLE;
             dm_write    <= DISABLE;

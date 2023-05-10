@@ -1,0 +1,4 @@
+`define FLAG_IS_ZERO 2'b11
+`define FLAG_IS_POSITIVE 2'b10
+`define FLAG_CARRY 2'b01
+`define FLAG_OVERFLOW 2'b00

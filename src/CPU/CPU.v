@@ -1,90 +1,194 @@
+`include "../define/flag.v"
+
 `include "./CU.v"
 `include "../07-inst-fetch-decode/InstDecoder1.v"
 `include "./PC.v"
 `include "../04-reg-heap/RegHeap.v"
 `include "../03-ALU/ALU.v"
 
+module ALURhsMux(
+    input [31:0] B,
+    input [31:0] inst_imm32,
+    input alu_rhs_sel,
+    output [31:0] alu_rhs
+);
+
+assign alu_rhs = alu_rhs_sel == `RHS_FROM_IMM32 ? inst_imm32 : B;
+
+endmodule
+
+module RegWriteBackMux(
+    input [31:0] inst_imm32,
+    input [31:0] alu_f,
+    input [31:0] mdr,
+    input [31:0] next_inst_addr,
+    input [2:0] reg_writeback_sel,
+    output [31:0] wb_data
+);
+
+wire [31:0] p_m_f_imm32 [3:0];
+
+assign p_m_f_imm32 = {
+    next_inst_addr,
+    mdr,
+    alu_f,
+    inst_imm32
+};
+
+assign wb_data = p_m_f_imm32[reg_writeback_sel];
+
+endmodule
+
+
 module CPU(
     input clk,
     input rst,
+    //与指令存储器相连
     output [31:0] inst_addr,
     input [31:0] inst,  //IFID阶段从指令存储器中读出的指令
+    //与数据存储器相连
     output dm_write,
     output [31:0] dm_addr,
     output [31:0] dm_data_in,
-    input [31:0] dm_data_out
+    input [31:0] dm_data_out,
+    //侵入式接口暴露CPU内部信息
+    output [31:0] watch_pc,
+    output [31:0] watch_ir,
+    output [31:0] watch_wb_data,
+    output [3:0] watch_alu_flags,
+    output [31:0] watch_mdr,
+    output watch_stat
 );
 
-wire pc_step;
-wire pc_jump;
-wire pc_jump_sel;
-wire [31:0] ret_addr;
+//控制信号
+wire pc_write;
+wire ir_write;
+wire regs_write;
+//wire dm_write;
+
+//选择信号
+wire [1:0] pc_update_sel;
+wire alu_rhs_sel;
+wire [1:0] reg_writeback_sel;
+
+wire [31:0] pc_cur;
+assign inst_addr = pc_cur;
+wire [31:0] pc_next;
 
 reg [31:0] ir;
-wire ir_write;
 
-wire [4:0] rs1, rs2, rd;
-wire [31:0] imm32;
-wire [6:0] opcode;
-wire [2:0] funct3;
-wire [6:0] funct7;
+wire [4:0] reg_rs1, reg_rs2, reg_rd;
+wire [31:0] reg_wb_data;
 
-wire regs_write;
-wire [31:0] A,B;
-wire [31:0] p_m_f_imm32 [3:0];
-assign p_m_f_imm32 = {ret_addr, dm_data_out, alu_f, imm32};
-wire [31:0] write_back;
-wire [1:0] wb_sel;
-assign write_back = p_m_f_imm32[wb_sel];
+wire [6:0] inst_opcode;
+wire [2:0] inst_func3;
+wire [6:0] inst_func7;
+wire [31:0] inst_imm32;
 
-wire [3:0] alu_op;
-wire lhs;
-assign lhs = A;
-wire [31:0] imm32_B [1:0];
-assign imm32_B = {imm32, B};
-wire [31:0] rhs;
-wire alu_rhs_sel;
-assign rhs = imm32_B[alu_rhs_sel]
+wire [31:0] A, B;
+
+assign alu_lhs = A;
+wire [31:0] alu_rhs;
 wire [3:0] alu_op;
 wire [31:0] alu_f;
 wire [3:0] alu_flags;
-wire zf = alu_flags[3];
+
+assign dm_addr = alu_f;
+assign dm_data_in = B;
+assign data_mem_out = dm_data_out;
+
+assign watch_pc = pc_cur;
+assign watch_ir = ir;
+assign watch_wb_data = reg_wb_data;
+assign watch_alu_flags = alu_flags;
+assign watch_mdr = dm_data_out;
+
 
 CU cu(
-  rst,
-  clk,
-  opcode,
-  funct3,
-  funct7,
-  zf,
-  pc_step,
-  pc_jump,
-  pc_jump_sel,
-  ir_write,
-  regs_write,
-  dm_write,
-  alu_op,
-  alu_rhs_sel,
-  wb_sel 
+    rst,
+    clk,
+    inst_opcode,
+    inst_func3,
+    inst_func7,
+    alu_flags[`FLAG_IS_ZERO],
+    pc_write,
+    pc_update_sel,
+    ir_write,
+    regs_write,
+    dm_write,
+    alu_op,
+    alu_rhs_sel,
+    reg_writeback_sel,
+    watch_stat
 );
 
-//PC模块
-PC pc( clk, rst, pc_step, pc_jump, pc_jump_sel, alu_f, imm32, inst_addr, ret_addr );
+ALURhsMux alu_rhs_mux(
+    B,
+    inst_imm32,
+    alu_rhs_sel,
+    alu_rhs
+);
 
-//IR模块
+RegWriteBackMux rwbm(
+    inst_imm32,
+    alu_f,
+    data_mem_out,
+    pc_next,
+    reg_writeback_sel,
+    reg_wb_data
+);
+
+PC pc(
+    clk,
+    rst,
+    pc_write,
+    pc_update_sel,
+    alu_f,
+    offset,
+    pc_next,
+    pc_cur
+);
+
 always @(negedge clk) begin
     if(ir_write)begin
         ir <= inst;
     end
 end
 
-//ID1
-InstDecoder1 id1( ir, rs1, rs2, rd, imm32, opcode, funct3, funct7 );
+InstDecoder1 id1(
+    ir,
+    reg_rs1,
+    reg_rs2,
+    reg_rd,
+    inst_imm32,
+    inst_opcode,
+    inst_func3,
+    inst_func7
+);
 
-//RegHeap
-RegHeap gh( clk, regs_write, rst, rs1, A, rs2, B, rd, w_data );
+RegHeap gh(
+    clk,
+    regs_write,
+    rst,
+    0,  //no test
+    reg_rs1,
+    A,
+    reg_rs2,
+    B,
+    reg_rd,
+    reg_wb_data
+);
 
-//ALU
-ALU alu( lhs, rhs, clk, alu_op, alu_f, alu_flags );
+ALU alu(
+    alu_lhs,
+    alu_rhs,
+    clk,
+    alu_op,
+    alu_f,
+    alu_flags
+);
+
+
+
 
 endmodule
