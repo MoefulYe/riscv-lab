@@ -22,20 +22,21 @@ Mem mem(
 );
 
 initial begin
-    #(PERIOD*2)
+    addr = 8'b0000_0000;
+    #20
+    addr = 8'b0000_0100;
+    #20
+    addr = 8'b0000_1000;
+    #20
+    addr = 8'b0000_1100;
+    #20
+    addr = 8'b0001_0000;
+    #20
+    addr = 8'b0001_0100;
+    #20
+    data_in = 32'hffff_ffff;
     w_en = 1;
-    addr = 1;
-    data_in = 32'h12345678;
-    #(PERIOD*2)
-    w_en = 0;
-    addr = 1;
-    #(PERIOD*2)
-    w_en = 1;
-    addr = 2;
-    data_in = 32'h87654321;
-    #(PERIOD*2)
-    w_en = 0;
-    addr = 2;
+    #20
     $finish;
 end
 

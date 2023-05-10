@@ -69,11 +69,11 @@ module Mem (
   input w_en,
   //input [1:0] mod,
   input [7:0] addr, //存储器共2^6 = 64个字 ,对字节进行编码后2位会被丢弃
-  input [31:0] data_in, 
-  output [31:0] data_out 
+  input [31:0] data_in,
+  output [31:0] data_out
 );
 
-Ram ram (
+DataMem dm (
   .clka(clk),    // input wire clka
   .wea(w_en),      // input wire [0 : 0] wea
   .addra(addr[7:2]),  // input wire [5 : 0] addra

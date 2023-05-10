@@ -11,10 +11,15 @@ module InstFetchDecode(
   output [31:0] imm32,
   output [6:0] opcode,
   output [2:0] funct3, 
-  output [6:0] funct7 
+  output [6:0] funct7,
+  output [7:0] watch_pc,
+  output [31:0] watch_ir
 );
 
+
 wire [7:0] ins_addr;
+assign watch_pc = ins_addr;
+
 PC pc(
   .clk(clk),
   .rst(rst_pc),
@@ -29,6 +34,7 @@ InstStore store(
   .douta(inst)
 );
 reg [31:0] IR;
+assign watch_ir = IR;
 
 InstDecoder1 id1(
   .inst(IR),
@@ -42,9 +48,7 @@ InstDecoder1 id1(
 );
 
 always @(negedge clk) begin
-  if(pc_write)begin
-    IR <= inst;
-  end
+    if(ir_write)IR <= inst;
 end
 
 endmodule

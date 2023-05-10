@@ -6,7 +6,7 @@ L1:
   lw t3, 0x40(t1);
   add t0, t0, t3;
   addi t1, t1, 4;
-  addi t1, t2, -1;
+  addi t2, t2, -1;
   beq t2, x0, L2;
   j L1;
 L2:

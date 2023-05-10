@@ -81,7 +81,10 @@ set_property PACKAGE_PIN L21 [get_ports {sel[3]}]
 set_property PACKAGE_PIN M22 [get_ports {sel[2]}]
 set_property PACKAGE_PIN M21 [get_ports {sel[1]}]
 set_property PACKAGE_PIN N22 [get_ports {sel[0]}]
-
+set_property PACKAGE_PIN N2 [get_ports {flags[0]}]
+set_property PACKAGE_PIN P1 [get_ports {flags[1]}]
+set_property PACKAGE_PIN P2 [get_ports {flags[2]}]
+set_property PACKAGE_PIN R1 [get_ports {flags[3]}]
 
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk_b_IBUF]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk_op_IBUF]
@@ -89,6 +92,10 @@ set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk_a_IBUF]
 
 
 
+set_property IOSTANDARD LVCMOS18 [get_ports {flags[0]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {flags[1]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {flags[2]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {flags[3]}]
 set_property IOSTANDARD LVCMOS18 [get_ports clk_a]
 set_property IOSTANDARD LVCMOS18 [get_ports clk_b]
 set_property IOSTANDARD LVCMOS18 [get_ports clk_op]

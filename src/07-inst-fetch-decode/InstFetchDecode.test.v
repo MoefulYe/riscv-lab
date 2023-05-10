@@ -7,6 +7,8 @@ wire [31:0] imm32;
 wire [6:0] opcode;
 wire [2:0] funct3; 
 wire [6:0] funct7;
+wire [7:0] watch_pc;
+wire [31:0] watch_ir;
 
 parameter PERIOD  = 10;
 
@@ -25,15 +27,16 @@ InstFetchDecode ins_fetch_decode(
   .imm32(imm32),
   .opcode(opcode),
   .funct3(funct3),
-  .funct7(funct7)
+  .funct7(funct7),
+  .watch_pc(watch_pc),
+  .watch_ir(watch_ir)
 );
 
 initial begin
-#20
 rst_pc = 1;
 #20
 rst_pc = 0;
-#2000
+#200
 $finish;
 end
 

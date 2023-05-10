@@ -6,12 +6,12 @@ module ALUwithRegHeapToppper(
     input reg_clk, alu_clk, //用按键模拟
     input rst,    //用按键模拟
     input clk,
+    output [3:0] flags,
     output [3:0] sel,
     output [7:0] seg
 );
 
 wire [31:0] res;
-wire [3:0] flags;
 
 ALUwithRegHeap ar(
     rst,

@@ -31,5 +31,9 @@ lw      a1, t1
 lw      a0,t0
 addi a2, x0, 20;
 
+addi a0, zero, 0x30
+addi a1, zero, 0x60
+addi a2, zero, 10
+
 5. 把bgt放在l1开头而不是l2前面
 8. 编译代码看不懂，查阅网上资料

@@ -19,6 +19,7 @@ RegHeap gh(
     reg_clk,
     w_en,
     rst,
+    1'b1,
     r_addr_a,
     r_data_a,
     r_addr_b,
