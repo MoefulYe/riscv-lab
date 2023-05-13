@@ -8,7 +8,7 @@
 `define ALU_OR_OP       4'b0110
 `define ALU_AND_OP      4'b0111
 `define ALU_SUB_OP      4'b1000
-`define ALU_SRA_OP      4'b1001
+`define ALU_SRA_OP      4'b1101
 `define ALU_ADDU_OP     4'b1010 //扩展不是标准实现,与add区别在标志寄存器的溢出和进位判断上
 `define ALU_SUBU_OP     4'b1011 //扩展不是标准实现,与sub区别在标志寄存器的溢出和进位判断上
 `define ALU_UNVALID_OP  4'b1111

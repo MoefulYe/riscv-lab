@@ -1,5 +1,5 @@
 `include "../define/flag.v"
-
+`include "../define/wb_from.v"
 `include "./CU.v"
 `include "../07-inst-fetch-decode/InstDecoder1.v"
 `include "./PC.v"
@@ -10,10 +10,15 @@ module ALURhsMux(
     input [31:0] B,
     input [31:0] inst_imm32,
     input alu_rhs_sel,
-    output [31:0] alu_rhs
+    output reg [31:0] alu_rhs
 );
 
-assign alu_rhs = alu_rhs_sel == `RHS_FROM_IMM32 ? inst_imm32 : B;
+always@(*)begin
+    case(alu_rhs_sel)
+    `RHS_FROM_B_REG: alu_rhs <= B;
+    `RHS_FROM_IMM32: alu_rhs <= inst_imm32;
+    endcase
+end
 
 endmodule
 
@@ -22,24 +27,22 @@ module RegWriteBackMux(
     input [31:0] alu_f,
     input [31:0] mdr,
     input [31:0] next_inst_addr,
-    input [2:0] reg_writeback_sel,
-    output [31:0] wb_data
+    input [1:0] reg_writeback_sel,
+    output reg [31:0] wb_data
 );
 
-wire [31:0] p_m_f_imm32 [3:0];
-
-assign p_m_f_imm32 = {
-    next_inst_addr,
-    mdr,
-    alu_f,
-    inst_imm32
-};
-
-assign wb_data = p_m_f_imm32[reg_writeback_sel];
+always @(*) begin
+    case(reg_writeback_sel)
+        `WB_FROM_IMM32: wb_data <= inst_imm32;
+        `WB_FROM_F_REG: wb_data <= alu_f;
+        `WB_FROM_M_REG: wb_data <= mdr;
+        `WB_FROM_P_REG: wb_data <= next_inst_addr;
+    endcase
+end
 
 endmodule
 
-
+//
 module CPU(
     input clk,
     input rst,
@@ -52,16 +55,27 @@ module CPU(
     output [31:0] dm_data_in,
     input [31:0] dm_data_out,
     //侵入式接口暴露CPU内部信息
+    output [3:0] watch_stat,
     output [31:0] watch_pc,
     output [31:0] watch_ir,
+    output [4:0] watch_rs1,
+    output [4:0] watch_rs2,
+    output [4:0] watch_rd,
     output [31:0] watch_wb_data,
+    output [31:0] watch_imm32,
+    output [31:0] watch_lhs,
+    output [31:0] watch_rhs,
+    output [3:0] watch_alu_op,
+    output [31:0] watch_alu_f,
     output [3:0] watch_alu_flags,
     output [31:0] watch_mdr,
-    output watch_stat
+    output [1:0] watch_wb_data_sel,
+    output [1:0] watch_pc_update_sel
 );
 
 //控制信号
-wire pc_write;
+wire pc_cur_write;
+wire pc_next_write;
 wire ir_write;
 wire regs_write;
 //wire dm_write;
@@ -87,6 +101,7 @@ wire [31:0] inst_imm32;
 
 wire [31:0] A, B;
 
+wire [31:0] alu_lhs;
 assign alu_lhs = A;
 wire [31:0] alu_rhs;
 wire [3:0] alu_op;
@@ -95,14 +110,22 @@ wire [3:0] alu_flags;
 
 assign dm_addr = alu_f;
 assign dm_data_in = B;
-assign data_mem_out = dm_data_out;
 
-assign watch_pc = pc_cur;
-assign watch_ir = ir;
-assign watch_wb_data = reg_wb_data;
-assign watch_alu_flags = alu_flags;
-assign watch_mdr = dm_data_out;
-
+assign  watch_pc = pc_cur;
+assign  watch_ir = ir;
+assign  watch_rs1 = reg_rs1;
+assign  watch_rs2 = reg_rs2;
+assign  watch_rd = reg_rd;
+assign  watch_wb_data = reg_wb_data;
+assign  watch_lhs = alu_lhs;
+assign  watch_rhs = alu_rhs;
+assign  watch_imm32 = inst_imm32;
+assign  watch_alu_op = alu_op;
+assign  watch_alu_f = alu_f;
+assign  watch_alu_flags = alu_flags;
+assign  watch_mdr = dm_data_out;
+assign  watch_wb_data_sel = reg_writeback_sel;
+assign  watch_pc_update_sel = pc_update_sel;
 
 CU cu(
     rst,
@@ -111,7 +134,8 @@ CU cu(
     inst_func3,
     inst_func7,
     alu_flags[`FLAG_IS_ZERO],
-    pc_write,
+    pc_cur_write,
+    pc_next_write,
     pc_update_sel,
     ir_write,
     regs_write,
@@ -132,7 +156,7 @@ ALURhsMux alu_rhs_mux(
 RegWriteBackMux rwbm(
     inst_imm32,
     alu_f,
-    data_mem_out,
+    dm_data_out,
     pc_next,
     reg_writeback_sel,
     reg_wb_data
@@ -141,10 +165,11 @@ RegWriteBackMux rwbm(
 PC pc(
     clk,
     rst,
-    pc_write,
+    pc_next_write,
+    pc_cur_write,
     pc_update_sel,
     alu_f,
-    offset,
+    inst_imm32,
     pc_next,
     pc_cur
 );
@@ -170,7 +195,7 @@ RegHeap gh(
     clk,
     regs_write,
     rst,
-    0,  //no test
+    1'b0,  //no test
     reg_rs1,
     A,
     reg_rs2,
@@ -187,8 +212,5 @@ ALU alu(
     alu_f,
     alu_flags
 );
-
-
-
 
 endmodule

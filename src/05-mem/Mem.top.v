@@ -35,8 +35,8 @@ LedDisplay led(
     clk,
     data_out,
     1'b1,
-    seg,
-    sel
+    sel,
+    seg
 );
 
 endmodule
