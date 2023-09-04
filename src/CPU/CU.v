@@ -79,7 +79,7 @@ end
 ///B-type(beq):  IFID -> RR -> EXB -> BEQ -> IFID
 ///J-type(jal):  IFID -> WBP_JPR -> IFID
 ///J-type(jalr): IFID -> RR -> EXI -> WBP_JPF -> IFID
-
+/// IF -> ID -> (RR) -> EX -> MEM -> WB
 
 //确定下一个状态
 always @(*) begin
